@@ -13,83 +13,147 @@
 
 #include "lottery.h"
 #include "general.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define 	UUID_LEN   40
 #define 	MAX_TIP_LEN   17
 #define 	MAX_LINE_LEN   (UUID_LEN + 1 + MAX_TIP_LEN + 1)
+
 static FILE* fd;
 static char separator;
 static int drawingOfNumbers[TIP_SIZE];
 
-bool 	init_lottery (const char *csv_file, char csv_separator)
+bool init_lottery(const char *csv_file, char csv_separator)
 {
   fd = fopen(csv_file, "r");
-  separator = csv_separator;
-  if(fd == 0)
+  if (fd == 0)
   {
     return false;
   }
+  separator = csv_separator;
+    for (int i = 0; i < TIP_SIZE; ++i)
+    {
+        drawingOfNumbers[i] = 0;
+    }
   return true;
 }
 
 bool get_tip(int tip_number, int tip[TIP_SIZE])
 {
-    if (tip_number < 0 || tip_number > 45) return false;
+
+    if (tip_number < 0 || tip_number >= 44)
+    {
+      return false;
+    }
     int count = 0;
-    char line[100];
-    while ( fgets(line, 100, fd) != NULL)
+    char line[MAX_LINE_LEN];
+    while ( fgets(line, MAX_LINE_LEN, fd) != NULL)
     {
         if (count == tip_number)
         {
-            if (line[strlen(line)-1] == '\n') line[strlen(line)-1] = '\0';
             count = 0;
             char str[2];
             str[0] = separator;
             str[1] = '\0';
             char* ptr = strtok(line, str);
-            while(ptr != NULL && count < TIP_SIZE)
+            while(ptr != 0)
             {
-                ptr = strtok(NULL, str);
-                tip[count] = atoi(ptr);
+                ptr = strtok(0, str);
+                if (ptr == 0)
+                {
+                  break;
+                }
+                if (atoi(ptr) > 0 && atoi(ptr) <= 45)
+                {
+                    tip[count] = atoi(ptr);
+                }
                 count++;
             }
             rewind(fd);
             return true;
         }
-        else
-        {
-            count++;
-        }
+        count++;
     }
   return false;
 }
 
-
-bool 	set_drawing (int drawing_numbers[TIP_SIZE])
+bool set_drawing(int drawing_numbers[TIP_SIZE])
 {
   for (int i = 0; i < TIP_SIZE; i++) {
-    if(drawing_numbers[i] <= 0 || drawing_numbers[i] > 45)
+
+    if (drawing_numbers[i] <= 0 || drawing_numbers[i] > 45)
     {
       return false;
     }
-    drawingOfNumbers[i] = drawing_numbers[i];
+    else
+    {
+      drawingOfNumbers[i] = drawing_numbers[i];
+    }
+
   }
   return true;
-
 }
-int 	get_tip_result (int tip_number)
+
+
+
+int get_tip_result(int tip_number)
 {
-  if(set_drawing(drawingOfNumbers) == false)
+  if (tip_number < 0 || tip_number >= 44)
+  {
+    return -2;
+  }
+
+  if (empty(drawingOfNumbers))
   {
     return -1;
   }
-  return 0;
+  int tip[TIP_SIZE];
+  int counter = 0;
+  get_tip(tip_number,tip);
 
+  for (int i = 0; i < TIP_SIZE; i++)
+  {
+    for (int j = 0; j < TIP_SIZE; j++)
+    {
+      if (drawingOfNumbers[i] == tip[j])
+      {
+        counter++;
+      }
+    }
+  }
+  return counter;
 }
-int 	get_right_tips_count (int right_digits_count)
+
+int get_right_tips_count(int right_digits_count)
 {
-  return 0;
+    if (right_digits_count < 0 || right_digits_count > TIP_SIZE || empty(drawingOfNumbers))
+    {
+      return -1;
+    }
+    int count = 0;
+    int temp = 0;
+
+    for (int i = 0; i < 44; ++i)
+    {
+        temp = get_tip_result(i);
+        if (temp == right_digits_count)
+        {
+            count++;
+        }
+    }
+  return count;
+}
+
+bool empty(int drawing_numbers[])
+{
+    for (int i = 0; i < TIP_SIZE; ++i)
+    {
+        if (drawing_numbers[i] != 0)
+        {
+          return false;
+        }
+    }
+    return true;
 }
